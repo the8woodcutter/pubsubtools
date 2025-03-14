@@ -8,20 +8,20 @@ import asyncio
 import slixmpp
 import logging
 import os
+import random
 
 class PubSubTools(slixmpp.ClientXMPP):
 
 # THIS IS BOOTSTRAPPING ASYNCRONOUS MUC CHAT BOT:
-	def __init__(self, jid, password, room, nick, server, node=None, data=''):
-		super().__init__(self, jid, password)
+	def __init__(self, jid, password, room, nick):
+		slixmpp.ClientXMPP.__init__(self, jid, password)
 
 		self.jid = jid
 		self.password = password
 		self.room = room
 		self.nick = nick
-		self.server = server
-		self.node = node
-		self.data = data
+		# FOR TESTING SAKE:
+		self.pubsub_server = "pubsub.xmpp.packets.cc"
 
 		self.register_plugin('xep_0030')  # Service Discovery
 		self.register_plugin('xep_0045')  # Multi-User Chat
@@ -37,10 +37,6 @@ class PubSubTools(slixmpp.ClientXMPP):
 		self.send_presence()
 		self.plugin['xep_0045'].join_muc(self.room, self.nick)
 
-# THIS IS ALSO PART OF THE MUC CHAT BOT EVENT LOOP:
-## THE ONLY THING WE SHOULD DO HERE IS ROUTE IN DATA TO THE COMMAND LIBRARY
-### AND GET RETURN DATA FROM THE COMMAND LIBRARY.  That command library also has to login
-### to the XMPP server and we can't have two logins in a loop!!
 	def muc_message(self, msg):
 	# PARSE THE INCOMING MESSAGE IN THE EVENT IT TRIGGERS A COMMAND:
 
@@ -65,19 +61,29 @@ class PubSubTools(slixmpp.ClientXMPP):
 			msg.reply(mesg).send()
 
 		# ### COMMANDS:
-		# body = msg['body']
-		# parts = body.split(' ')
+		body = msg['body']
+		parts = body.split(' ')
 
-		# # this is len(parts) == 2:
-		# ## i think the only command of this such:
+	# SERVICE DISCOVERY:
+	## NOT PUBSUB!
+		# GET LOCAL INFO:
+		if body == "!xmpp getinfo":
+			info = self['xep_0030'].get_info(node=self.nick, local=True)
+			info_list = info.split('\n')
+			info_str = "\r\n".join(info_list)
+			msg.reply(info_str).send()
+
+		# GET LOCAL NODE ITEMS:
+		if body.startswith('!xmpp items '):
+			if len(parts) > 2:
+				node = parts[2]
+				node = str(node)
+				items = self['xep_0030'].get_items(jid=self.jid, node=node, local=True)
+				items_string = "\r\n".join(items)
+				msg.reply(items_string).send()
+
 		# if body == "!xmpp nodes":
 		# 	test = ps_commands.nodes(self)
-		# 	if test == True:
-		# 		pass
-		# 	elif test == False:
-		# 		pass
-		# 	else:
-		# 		pass
 
 		# if len(parts) > 2:
 		# 	if parts[0] == "!xmpp":
@@ -113,11 +119,37 @@ class PubSubTools(slixmpp.ClientXMPP):
 
 if __name__ == '__main__':
 	jid = input("Bot's JID: ")
+	jid = str(jid)
 	password = getpass("Bot's Password: ")
+	password = str(password)
+	if len(password) < 1:
+		print('Password is empty!')
 	room = input("MUC JID to Join: ")
+	room = str(room)
 	nick = input("Bot's Nickname: ")
-	server = input("PubSub Server JID: ")
+	nick = str(nick)
+	# server = input("PubSub Server JID: ")
+	# server = str(server)
 
-	xmpp = PubSubTools(jid, password, room, nick, server, node=None, data='')
+
+	xmpp = PubSubTools("b0t@packets.cc", "000000", "memos@muc.xmpp.packets.cc", "b0t")
+	xmpp.register_plugin('xep_0030')  # Service Discovery
+	xmpp.register_plugin('xep_0045')  # Multi-User Chat
+	xmpp.register_plugin('xep_0059')  # Result Set Management
+	xmpp.register_plugin('xep_0060')  # PubSub
+	xmpp.register_plugin('xep_0199')  # XMPP Ping
 	xmpp.connect()
 	xmpp.process()
+
+# xmpp = ClientXMPP(f'{jid}/{random.randint(10000,999999)}', str(password))
+# # ... Register plugins and event handlers ...
+# self.register_plugin('xep_0030')  # Service Discovery
+# self.register_plugin('xep_0045')  # Multi-User Chat
+# self.register_plugin('xep_0059')  # Result Set Management
+# self.register_plugin('xep_0060')  # PubSub
+# self.register_plugin('xep_0199')  # XMPP Ping
+
+# self.add_event_handler("session_start", self.start)
+# self.add_event_handler("groupchat_message", self.muc_message)
+# xmpp.connect()
+# asyncio.get_event_loop().run_forever()
