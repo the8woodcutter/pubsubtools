@@ -1,7 +1,3 @@
-# perhaps put the EVENT LOOP of the muc_message portion of this bot in another ...  event loop
-## use the pubsub commands and other commands on the exterior and statically as import
-### we needed to sort out these event loops, and asynchronous things!!!
-
 from getpass import getpass
 from pubsub_commands import PubSubCommands as ps_commands
 import asyncio
@@ -12,7 +8,6 @@ import random
 
 class PubSubTools(slixmpp.ClientXMPP):
 
-# THIS IS BOOTSTRAPPING ASYNCRONOUS MUC CHAT BOT:
 	def __init__(self, jid, password, room, nick):
 		slixmpp.ClientXMPP.__init__(self, jid, password)
 
@@ -20,15 +15,7 @@ class PubSubTools(slixmpp.ClientXMPP):
 		self.password = password
 		self.room = room
 		self.nick = nick
-		# FOR TESTING SAKE:
 		self.pubsub_server = "pubsub.xmpp.packets.cc"
-
-		self.register_plugin('xep_0030')  # Service Discovery
-		self.register_plugin('xep_0045')  # Multi-User Chat
-		self.register_plugin('xep_0059')  # Result Set Management
-		self.register_plugin('xep_0060')  # PubSub
-		self.register_plugin('xep_0199')  # XMPP Ping
-
 		self.add_event_handler("session_start", self.start)
 		self.add_event_handler("groupchat_message", self.muc_message)
 
@@ -38,52 +25,17 @@ class PubSubTools(slixmpp.ClientXMPP):
 		self.plugin['xep_0045'].join_muc(self.room, self.nick)
 
 	def muc_message(self, msg):
-	# PARSE THE INCOMING MESSAGE IN THE EVENT IT TRIGGERS A COMMAND:
-
-		# ABOUT:
-		if msg['body'] == "!xmpp about":
-			mesgs = [
-				"xmpp:xmpptools@packets.cc",
-				"xmpp:pubsubtools@packets.cc",
-				"PubSubTools - A SliXMPP Bot Project - by chunk",
-				"https://github.com/the8woodcutter/pubsubtools"
-			]
-			mesg = "\r\n".join(mesgs)
-			msg.reply(mesg).send()
-
-		# HELP:
-		if msg['body'] == "!xmpp help":
-			mesgs = [
-				"`!xmpp nodes` to get nodes from pubsub server",
-				"`!xmpp get <node_name>` to get node items from node",
-			]
-			mesg = "\r\n".join(mesgs)
-			msg.reply(mesg).send()
-
-		# ### COMMANDS:
+	# ### COMMANDS:
 		body = msg['body']
 		parts = body.split(' ')
 
-	# SERVICE DISCOVERY:
-	## NOT PUBSUB!
-		# GET LOCAL INFO:
-		if body == "!xmpp getinfo":
-			info = self['xep_0030'].get_info(node=self.nick, local=True)
-			info_list = info.split('\n')
-			info_str = "\r\n".join(info_list)
-			msg.reply(info_str).send()
+		# GET NODES:
+		async def nodes(self):
+			nodes = await ps_commands.nodes(self)
+			msg.reply(nodes).send()
 
-		# GET LOCAL NODE ITEMS:
-		if body.startswith('!xmpp items '):
-			if len(parts) > 2:
-				node = parts[2]
-				node = str(node)
-				items = self['xep_0030'].get_items(jid=self.jid, node=node, local=True)
-				items_string = "\r\n".join(items)
-				msg.reply(items_string).send()
-
-		# if body == "!xmpp nodes":
-		# 	test = ps_commands.nodes(self)
+		if body == "!xmpp nodes":
+			nodes(self)
 
 		# if len(parts) > 2:
 		# 	if parts[0] == "!xmpp":
@@ -117,39 +69,77 @@ class PubSubTools(slixmpp.ClientXMPP):
 				# 	pass
 
 
+
+	# SERVICE DISCOVERY:
+	## NOT PUBSUB!
+		# GET LOCAL INFO:
+		async def get_info(self):
+			info = await self['xep_0030'].get_info(node=self.nick, local=True)
+			# info_list = info.split('\n')
+			# info_str = "\r\n".join(info_list)
+			msg.reply("I have yet to be figured out!").send() # !!!!!!!!!!!!!!!!!!!!
+
+		if body == "!xmpp getinfo":
+			get_info(self)
+
+		# GET LOCAL NODE ITEMS:
+		async def items(self, node):
+					try:
+						items = await self['xep_0030'].get_items(jid=self.jid, node=node, local=True)
+						items_string = "\r\n".join(items)
+						msg.reply(items_string).send()
+					except:
+						mesg = "Invalid Node!"
+						msg.reply(mesg).send()
+
+		if body.startswith('!xmpp items '):
+			if len(parts) > 2:
+				node = parts[2]
+				node = str(node)
+				items(self, node)
+
+	# INFORMATIONAL:
+		# ABOUT:
+		if msg['body'] == "!xmpp about":
+			mesgs = [
+				"xmpp:xmpptools@packets.cc",
+				"xmpp:pubsubtools@packets.cc",
+				"PubSubTools - A SliXMPP Bot Project - by chunk",
+				"https://github.com/the8woodcutter/pubsubtools"
+			]
+			mesg = "\r\n".join(mesgs)
+			msg.reply(mesg).send()
+
+		# HELP:
+		if msg['body'] == "!xmpp help":
+			mesgs = [
+				"`!xmpp nodes` to get nodes from pubsub server",
+				"`!xmpp get <node_name>` to get node items from node",
+			]
+			mesg = "\r\n".join(mesgs)
+			msg.reply(mesg).send()
+
+
+
 if __name__ == '__main__':
-	jid = input("Bot's JID: ")
-	jid = str(jid)
-	password = getpass("Bot's Password: ")
-	password = str(password)
-	if len(password) < 1:
-		print('Password is empty!')
-	room = input("MUC JID to Join: ")
-	room = str(room)
-	nick = input("Bot's Nickname: ")
-	nick = str(nick)
-	# server = input("PubSub Server JID: ")
-	# server = str(server)
+	botjid_to_load_in = input("Bot's JID: ")
+	botjid_to_load = str(botjid_to_load_in)
 
+	passwd_to_load_in =  input("Password: ")
+	passwd_to_load = str(passwd_to_load_in)
 
-	xmpp = PubSubTools("b0t@packets.cc", "000000", "memos@muc.xmpp.packets.cc", "b0t")
+	botnick_to_load_in =  input("Bot's nickname: ")
+	botnick_to_load = str(botnick_to_load_in)
+
+	muc_to_load_in =  input("MUC's JID: ")
+	muc_to_load = str(muc_to_load_in)
+
+	xmpp = PubSubTools(botjid_to_load, passwd_to_load, muc_to_load, botnick_to_load)
 	xmpp.register_plugin('xep_0030')  # Service Discovery
 	xmpp.register_plugin('xep_0045')  # Multi-User Chat
 	xmpp.register_plugin('xep_0059')  # Result Set Management
 	xmpp.register_plugin('xep_0060')  # PubSub
 	xmpp.register_plugin('xep_0199')  # XMPP Ping
 	xmpp.connect()
-	xmpp.process()
-
-# xmpp = ClientXMPP(f'{jid}/{random.randint(10000,999999)}', str(password))
-# # ... Register plugins and event handlers ...
-# self.register_plugin('xep_0030')  # Service Discovery
-# self.register_plugin('xep_0045')  # Multi-User Chat
-# self.register_plugin('xep_0059')  # Result Set Management
-# self.register_plugin('xep_0060')  # PubSub
-# self.register_plugin('xep_0199')  # XMPP Ping
-
-# self.add_event_handler("session_start", self.start)
-# self.add_event_handler("groupchat_message", self.muc_message)
-# xmpp.connect()
-# asyncio.get_event_loop().run_forever()
+	# xmpp.process()
+	asyncio.get_event_loop().run_forever()
