@@ -4,4 +4,4 @@ pyasn1==0.6.1
 pyasn1_modules==0.4.1
 pycares==4.5.0
 pycparser==2.22
-slixmpp==1.9.1
+slixmpp==1.9.0
