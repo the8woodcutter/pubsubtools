@@ -43,28 +43,26 @@ class PubSubTools(slixmpp.ClientXMPP):
         #     logging.exception('Could not execute %s:', self.action)
         # self.disconnect()
 
-    def muc_message(self, msg):
+    async def muc_message(self, msg):
         # do the stuff where messages make commands:              
         body = msg['body']
         parts = body.split(' ')
 
         if body == "!xmpp nodes":
-            async def nodes(self):
-                try:
-                    # results = []
-                    return await self['xep_0060'].get_nodes(self.pubsub_server)
-                    # for item in result['disco_items']['items']:
-                    #     logging.info('  - %s', str(item))
-                    #     results.append('  - %s', str(item))
-                    # results = "\r\n".join(results)
-                    # return results
-                except XMPPError as error:
-                    logging.error('Could not retrieve node list: %s', error.format())
-                    return f'Could not retrieve node list: {error}'
+            return await self.nodes()
 
-            nodes(self)
-
-
+    async def nodes(self):
+        try:
+            # results = []
+            return await self['xep_0060'].get_nodes(self.pubsub_server)
+            # for item in result['disco_items']['items']:
+            #     logging.info('  - %s', str(item))
+            #     results.append('  - %s', str(item))
+            # results = "\r\n".join(results)
+            # return results
+        except XMPPError as error:
+            logging.error('Could not retrieve node list: %s', error.format())
+            return f'Could not retrieve node list: {error}'
 
 # make these commands return message strings:
     # async def nodes(self):
