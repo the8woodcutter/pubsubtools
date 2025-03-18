@@ -43,7 +43,7 @@ class PubSubTools(slixmpp.ClientXMPP):
         #     logging.exception('Could not execute %s:', self.action)
         # self.disconnect()
 
-    async def muc_message(self, msg):
+    def muc_message(self, msg):
         # do the stuff where messages make commands:              
         body = msg['body']
         parts = body.split(' ')
