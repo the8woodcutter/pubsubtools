@@ -1,7 +1,7 @@
 import logging
 from getpass import getpass
 from argparse import ArgumentParser
-
+import os
 import slixmpp
 import asyncio
 from slixmpp.exceptions import XMPPError
@@ -49,17 +49,24 @@ class PubSubTools(slixmpp.ClientXMPP):
         parts = body.split(' ')
 
         if body == "!xmpp nodes":
-            return self.nodes()
+            try:
+                result = self.nodes()
+                result = str(result)
+                msg.reply(result).send()
+            except:
+                msg.reply("No deal!").send()
 
     def nodes(self):
         try:
+            # results = []
             result = self['xep_0060'].get_nodes(self.pubsub_server)
-            results = []
-            for item in result['disco_items']['items']:
-                logging.info('  - %s', str(item))
-                results.append('  - %s', str(item))
-            results = "\r\n".join(results)
-            return results
+            return result['disco_items']['items']
+            # for item in result['disco_items']['items']:
+            #     logging.info('  - %s', str(item))
+            #     results.append('  - %s', str(item))
+            # results = "\r\n".join(results)
+            # logging.debug('%s', str(results))
+            # return results
         except XMPPError as error:
             logging.error('Could not retrieve node list: %s', error.format())
             return f'Could not retrieve node list: {error}'
