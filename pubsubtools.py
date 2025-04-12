@@ -10,7 +10,7 @@ from slixmpp.xmlstream import ET, tostring
 
 class PubSubTools(slixmpp.ClientXMPP):
 
-    def __init__(self, jid, password, room, nick, server): #, node=None, action='nodes', data=''):
+    def __init__(self, jid, password, room, nick, server):
         super().__init__(jid, password)
 
         self.register_plugin('xep_0030')
@@ -18,15 +18,10 @@ class PubSubTools(slixmpp.ClientXMPP):
         self.register_plugin('xep_0060')
         self.register_plugin('xep_0045')
 
-        # self.actions = ['nodes', 'create', 'delete', 'get_configure',
-        #                 'publish', 'get', 'retract',
-        #                 'purge', 'subscribe', 'unsubscribe']
-
-        # self.action = action
         self.room = room
         self.nick = nick
-        # self.node = None
-        # self.data = ''
+        self.node = None
+        self.data = ''
         self.pubsub_server = server
 
         self.add_event_handler('session_start', self.start)
@@ -37,53 +32,24 @@ class PubSubTools(slixmpp.ClientXMPP):
         self.send_presence()
         self.plugin['xep_0045'].join_muc(self.room, self.nick)
 
-        # try:
-        #     await getattr(self, self.action)()
-        # except:
-        #     logging.exception('Could not execute %s:', self.action)
-        # self.disconnect()
-
-    def muc_message(self, msg):
+    async def muc_message(self, msg):
         # do the stuff where messages make commands:              
-        body = msg['body']
-        parts = body.split(' ')
+        ## 
+        if msg['body'] == "^pubsub nodes":
+            await self.nodes()
 
-        if body == "!xmpp nodes":
-            try:
-                result = self.nodes()
-                result = str(result)
-                msg.reply(result).send()
-            except:
-                msg.reply("No deal!").send()
-
-    def nodes(self):
+    async def nodes(self):
         try:
-            # results = []
-            result = self['xep_0060'].get_nodes(self.pubsub_server)
-            return result['disco_items']['items']
-            # for item in result['disco_items']['items']:
-            #     logging.info('  - %s', str(item))
-            #     results.append('  - %s', str(item))
-            # results = "\r\n".join(results)
-            # logging.debug('%s', str(results))
-            # return results
+            result = await self['xep_0060'].get_nodes(self.pubsub_server)
+            results = []
+            for item in result['disco_items']['items']:
+                logging.info('  - %s', str(item))
+                results.append(f'  - {item}')
+            results = "\r\n".join(results)
+            return results
         except XMPPError as error:
             logging.error('Could not retrieve node list: %s', error.format())
             return f'Could not retrieve node list: {error}'
-
-# make these commands return message strings:
-    # async def nodes(self):
-    #     try:
-    #         result = await self['xep_0060'].get_nodes(self.pubsub_server)
-    #         results = []
-    #         for item in result['disco_items']['items']:
-    #             logging.info('  - %s', str(item))
-    #             results.append(f'  - {item}')
-    #         results = "\r\n".join(results)
-    #         return results
-    #     except XMPPError as error:
-    #         logging.error('Could not retrieve node list: %s', error.format())
-    #         return f'Could not retrieve node list: {error}'
 
     # async def create(self):
     #     try:
