@@ -134,11 +134,11 @@ if __name__ == '__main__':
     pubsub_server_to_load = str(pubsub_server_to_load_in)
 
     xmpp = PubSubTools(botjid_to_load, passwd_to_load, muc_to_load, botnick_to_load, pubsub_server_to_load)
-    xmpp.register_plugin('xep_0030')  # Service Discovery
-    xmpp.register_plugin('xep_0045')  # Multi-User Chat
-    # xmpp.register_plugin('xep_0059')  # Result Set Management
-    xmpp.register_plugin('xep_0060')  # PubSub
-    xmpp.register_plugin('xep_0199')  # XMPP Ping
+    # xmpp.register_plugin('xep_0030')  # Service Discovery
+    # xmpp.register_plugin('xep_0045')  # Multi-User Chat
+    # # xmpp.register_plugin('xep_0059')  # Result Set Management
+    # xmpp.register_plugin('xep_0060')  # PubSub
+    # xmpp.register_plugin('xep_0199')  # XMPP Ping
     xmpp.connect()
     xmpp.process()
     # asyncio.get_event_loop().run_forever()
